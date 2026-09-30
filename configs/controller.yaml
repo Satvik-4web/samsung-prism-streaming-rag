@@ -1,0 +1,9 @@
+weights:
+  stability: 0.5
+  completeness: 0.3
+  info_gain: 0.2
+thresholds:
+  retrieve: 0.75
+  min_info_gain: 1.0
+  debounce_ms: 200
+  end_silence_ms: 1000
