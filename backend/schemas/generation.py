@@ -30,6 +30,7 @@ class Claim(BaseModel):
     citations: list[VerifiedCitation] = Field(default_factory=list)
     status: ClaimStatus = ClaimStatus.UNCERTAIN
     uncertainty: str | None = None
+    verification_reason: str | None = None
 
 class AnswerVersion(BaseModel):
     version: int
@@ -46,3 +47,4 @@ class AnswerVersion(BaseModel):
     trigger_delta: dict[str, object] = Field(default_factory=dict)
     claim_diffs: dict[str, str] = Field(default_factory=dict)
     rendered_answer: str = ""
+

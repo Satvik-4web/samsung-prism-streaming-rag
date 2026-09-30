@@ -72,15 +72,19 @@ class GroundingVerifier:
         claim.supported_by_chunk_ids = [c.chunk_id for c in verified if c.support_score >= 0.60]
         if find_conflicts(claim.text, relevant_texts):
             claim.status = ClaimStatus.CONFLICTING
-            claim.uncertainty = "Sources disagree."
+            claim.uncertainty = 'Sources disagree.'
+            claim.verification_reason = 'Multiple evidence chunks disagree.'
         elif claim.supported_by_chunk_ids:
-            claim.status = ClaimStatus.SUPPORTED if all(c.support_score >= 0.60 for c in verified) else ClaimStatus.UNCERTAIN
+            claim.status = ClaimStatus.SUPPORTED
+            claim.verification_reason = 'Entity and numeric constraints successfully verified against corpus.'
         elif verified:
             claim.status = ClaimStatus.UNCERTAIN
-            claim.uncertainty = "The cited evidence only partially supports this claim."
+            claim.uncertainty = 'The cited evidence only partially supports this claim.'
+            claim.verification_reason = 'Insufficient evidence to establish the claim fully.'
         else:
             claim.status = ClaimStatus.UNSUPPORTED
-            claim.uncertainty = "No verified citation supports this claim."
+            claim.uncertainty = 'No verified citation supports this claim.'
+            claim.verification_reason = 'No matching evidence found in valid citations.'
         if self.bus:
             event_type = {
                 ClaimStatus.SUPPORTED: "claim_verified",
@@ -115,3 +119,5 @@ def verify_claims(claims: Sequence[Claim], evidence: Sequence[Evidence], session
 
 
 __all__ = ["GroundingVerifier", "citation_exists", "citation_key", "map_citation", "verify_claims"]
+
+

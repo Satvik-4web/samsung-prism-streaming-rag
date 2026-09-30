@@ -1,0 +1,67 @@
+with open('backend/main.py', 'r') as f:
+    lines = f.readlines()
+
+new_lines = []
+skip = False
+for line in lines:
+    if "async def websocket_endpoint" in line:
+        new_lines.append(line)
+        new_lines.append("    await websocket.accept()\n")
+        new_lines.append("    request_id = str(uuid.uuid4())\n")
+        new_lines.append("    active_task = None\n")
+        new_lines.append("    \n")
+        new_lines.append("    async def process_retrieval(utt_state, req_id):\n")
+        new_lines.append("        try:\n")
+        new_lines.append("            intents = state.segmenter.segment(utt_state.committed_text, req_id, session_id)\n")
+        new_lines.append("            await websocket.send_json({'event': 'intents_extracted', 'intents': [i.model_dump() for i in intents]})\n")
+        new_lines.append("            sess = await state.manager.process_intents(session_id, req_id, intents)\n")
+        new_lines.append("            claims = []\n")
+        new_lines.append("            for intent in sess.intents:\n")
+        new_lines.append("                from backend.schemas.generation import Claim\n")
+        new_lines.append("                matching_ev = [ev.chunk_id for ev in sess.evidence if intent.intent_id in ev.intent_ids]\n")
+        new_lines.append("                text = f'Found requirements for {intent.description}' if matching_ev else f'No details found for {intent.description}'\n")
+        new_lines.append("                claims.append(Claim(claim_id=str(uuid.uuid4()), text=text, intent_id=intent.intent_id, supported_by_chunk_ids=matching_ev))\n")
+        new_lines.append("            verified_claims = state.verifier.verify(claims, sess.evidence, session_id)\n")
+        new_lines.append("            parent_versions = state.manager.answers.get(session_id, [])\n")
+        new_lines.append("            parent = parent_versions[-1] if parent_versions else None\n")
+        new_lines.append("            answer_v = state.generator.generate(\n")
+        new_lines.append("                claims=verified_claims, evidence=sess.evidence, session_id=session_id, request_id=req_id,\n")
+        new_lines.append("                version=(parent.version + 1) if parent else 1, parent=parent)\n")
+        new_lines.append("            if session_id not in state.manager.answers: state.manager.answers[session_id] = []\n")
+        new_lines.append("            state.manager.answers[session_id].append(answer_v)\n")
+        new_lines.append("            await websocket.send_json({'event': 'answer_generated', 'answer': answer_v.model_dump(), 'evidence': [e.model_dump() for e in sess.evidence]})\n")
+        new_lines.append("            from backend.schemas.telemetry import TelemetryEvent\n")
+        new_lines.append("            telemetry_bus.emit(TelemetryEvent(event_type='retrieval_completed', session_id=session_id, payload={'request_id': req_id}))\n")
+        new_lines.append("        except asyncio.CancelledError:\n")
+        new_lines.append("            from backend.schemas.telemetry import TelemetryEvent\n")
+        new_lines.append("            telemetry_bus.emit(TelemetryEvent(event_type='retrieval_cancelled', session_id=session_id, payload={'request_id': req_id}))\n")
+        new_lines.append("            raise\n")
+        new_lines.append("        except Exception as e:\n")
+        new_lines.append("            print(f'Pipeline error: {e}')\n")
+        new_lines.append("\n")
+        new_lines.append("    try:\n")
+        new_lines.append("        while True:\n")
+        new_lines.append("            data = await websocket.receive_json()\n")
+        new_lines.append("            if data.get('type') == 'chunk':\n")
+        new_lines.append("                chunk = StreamChunk(\n")
+        new_lines.append("                    session_id=session_id, seq=data.get('seq', 0), t_ms=data.get('t_ms', 0),\n")
+        new_lines.append("                    text=data['text'], is_final=data.get('is_final', False), chunk_id=f'c_{data.get(\"seq\", 0)}'\n")
+        new_lines.append("                )\n")
+        new_lines.append("                utt_state = state.buffer.append(chunk)\n")
+        new_lines.append("                decision = state.controller.evaluate(utt_state, chunk.t_ms)\n")
+        new_lines.append("                await websocket.send_json({'event': 'controller_decision', 'decision': decision.decision, 'reason': decision.reason, 'text': utt_state.committed_text})\n")
+        new_lines.append("                if decision.decision == 'RETRIEVE':\n")
+        new_lines.append("                    if active_task and not active_task.done():\n")
+        new_lines.append("                        active_task.cancel()\n")
+        new_lines.append("                    req_id = str(uuid.uuid4())\n")
+        new_lines.append("                    active_task = asyncio.create_task(process_retrieval(utt_state, req_id))\n")
+        new_lines.append("    except WebSocketDisconnect:\n")
+        new_lines.append("        pass\n")
+        skip = True
+    elif skip:
+        pass
+    else:
+        new_lines.append(line)
+
+with open('backend/main.py', 'w') as f:
+    f.writelines(new_lines)

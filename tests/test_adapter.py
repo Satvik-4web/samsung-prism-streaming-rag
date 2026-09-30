@@ -11,8 +11,10 @@ def test_fixture_loading() -> None:
     assert len(docs) == 1
     doc = docs[0]
     assert doc.document_id == "Doc_dev1"
-    assert len(doc.sections) == 2
+    assert len(doc.sections) == 3
     
     chunks = list(adapter.chunk(doc))
-    assert len(chunks) == 2
+    assert len(chunks) == 3
     assert chunks[0].chunk_id == "Doc_dev1::S1::0001"
+
+

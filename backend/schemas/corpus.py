@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class Section(BaseModel):
     section_id: str
     title: str | None = None
+    content: str = ""
     level: int = 1
 
 class Document(BaseModel):

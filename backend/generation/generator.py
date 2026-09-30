@@ -64,7 +64,7 @@ class DeterministicAnswerGenerator:
             checked.supported_by_chunk_ids = [item.chunk_id for item in valid_citations]
             if checked.status is ClaimStatus.SUPPORTED and valid_citations:
                 citations = " ".join(c.display for c in valid_citations)
-                rendered.append(f"{checked.text} {citations}".strip())
+                rendered.append(checked.text.strip())
             elif checked.status is ClaimStatus.CONFLICTING:
                 rendered.append(f"Uncertainty: conflicting evidence for {checked.text}")
             elif checked.status in (ClaimStatus.UNCERTAIN, ClaimStatus.UNSUPPORTED) or not valid_citations:
@@ -124,3 +124,4 @@ def _claim_diffs(previous: Sequence[Claim], current: Sequence[Claim]) -> dict[st
 
 
 __all__ = ["AnswerGenerator", "DeterministicAnswerGenerator"]
+

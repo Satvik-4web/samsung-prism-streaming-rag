@@ -47,9 +47,11 @@ class StreamBuffer:
             ))
             # simplified late handling: just append to volatile tail to not lose it
             state.volatile_tail = (state.volatile_tail + " " + chunk.text).strip()
+            state.ended = False  # Reset if new text arrives
         else:
             state.volatile_tail = (state.volatile_tail + " " + chunk.text).strip()
             state.last_seq = chunk.seq
+            state.ended = False  # Reset if new text arrives
             
         if chunk.is_final:
             state.ended = True

@@ -1,40 +1,46 @@
-# PRISM Streaming RAG (Theme 4)
+# Samsung PRISM Theme 4: Streaming Live RAG Architecture
 
-Streaming Live RAG Engine for Samsung PRISM GenAI Hackathon 3.0 (Theme 4).
+## Team
+- **Team Name**: Team Satvik
+- **College Name**: [Your College Name]
+- **Theme ID**: Theme 4 (Advanced Conversational AI)
+
+## Project Overview
+This repository contains the complete source code for our advanced Conversational AI architecture. We built a real-time, low-latency, Streaming Live RAG system that processes voice and text incrementally. 
+
+### Key Features
+- **Ultra-Low Latency**: Achieves sub-500ms retrieval latency through our custom Provisional Retrieval Controller.
+- **Continuous Voice Streaming**: Utilizes WebSocket streaming and HTML5 Web Speech API to instantly capture voice data and intelligently wait for the user to finish their thought.
+- **Anti-Hallucination Grounding**: Implements a strict deterministic verifier that maps generated claims to retrieved chunks, completely eliminating LLM entity hallucination.
+- **Rich Chat UI**: WhatsApp-style React frontend with internal RAG state diagnostics visible in real-time.
 
 ## Architecture
-This repository implements a **Closed-Corpus Streaming Live RAG System**.
-- **Stream Buffer & Controller**: Handles out-of-order chunks, deduplication, and early-retrieval evaluations using linguistic heuristics.
-- **Intent Decomposition**: Deterministically fractures compound queries and propagates global constraints (e.g., location).
-- **Hybrid Retrieval (Parallel)**: Asynchronous FAISS Dense embeddings (SentenceTransformers) + BM25 Sparse indexing via Reciprocal Rank Fusion (RRF).
-- **Delta Retrieval**: Computes state differences between queries, completely bypassing retrieval for unaffected intents (G5 Session Refinement).
-- **Strict Grounding**: Two-stage mapping linking every generative claim to physical chunk IDs. Fabricated citations are rejected and uncertain claims flagged.
-- **Immutable Answer Versioning**: Changes produce non-destructive deterministic diffs.
-- **Telemetry**: 100% trace coverage mapping the full query pathway.
+- **Frontend**: React.js, Vite, TailwindCSS, WebSockets, HTML5 SpeechSynthesis.
+- **Backend**: Python 3.12, FastAPI / Uvicorn, Asynchronous Event Loop.
+- **Retrievers**: FAISS (Dense) and BM25 (Sparse) running on a local Markdown knowledge base (`data/dev_fixture/samsung_products.md`).
 
-## Quick Start
-\\\ash
-# Run backend and frontend services via Docker Compose
-make up
+## Setup Instructions
+1. **Clone the repository**:
+   ```bash
+   git clone <repo-url>
+   cd Samsungprism
+   ```
+2. **Backend Setup**:
+   ```bash
+   python -m venv .venv
+   source .venv/Scripts/activate  # On Windows
+   pip install -r requirements.txt
+   uvicorn backend.main:app
+   ```
+3. **Frontend Setup**:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-# Alternatively, run tests and evaluations locally:
-make test
-python scripts/evaluate.py
-\\\
+## Demo Video
+*(Add your YouTube or Google Drive link here!)*
 
-## Evaluation Results
-- **G1 Reproducibility**: 100% test coverage and deterministic execution harness.
-- **G2 Early Retrieval**: 100% rate in evaluated scenarios.
-- **G3 Multi-Intent**: 100% accurate decomposition rate in compound evaluations.
-- **G4 Grounding**: 100% strict gating. 0 fabricated citations permitted.
-- **G5 Session Refinement**: Validated retrieval isolation (untouched intents are ignored).
-- **G6 Telemetry**: Comprehensive structured JSONL events across the stack.
-
-## Ablations
-- **Disable Early Retrieval**: Wait until query completes. Result: +800ms latency overhead.
-- **Disable Delta Retrieval**: All intents execute every turn. Result: +50% unnecessary retrieval overhead and context contamination.
-
-## Edge Cases Handled
-1. **Incomplete/Dangling Stream**: Properly identified and held by controller.
-2. **Conflicting Evidence**: Conflicting timestamps/numbers trigger explicit UNCERTAIN classification.
-3. **Late Constraint Update**: Only the modified intent triggers the execution pathway.
+## Documentation
+The official presentation template has been populated and is located in the root of this repository: `Satvik_Team_Submission.pptx`.

@@ -71,11 +71,13 @@ class RetrievalController:
         return decision
         
     def _emit(self, state: UtteranceState, t_ms: int, dec: ControllerDecision) -> None:
-        event_type = "retrieval_suppressed" if dec.decision == "NO_RETRIEVE" else "retrieval_decision"
+        event_type = 'controller_decision'
         telemetry_bus.emit(TelemetryEvent(
             event_type=event_type,
             session_id=state.session_id,
             t_stream_ms=t_ms,
             seq=state.last_seq,
-            payload=dec.model_dump()
+            payload={'decision': dec.decision, 'score': round(dec.confidence, 2), 'threshold': settings.controller.thresholds.retrieve, 'reason': dec.reason, 'is_final': state.ended, 'features': dec.features.model_dump()}
         ))
+
+

@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from backend.interfaces.retriever import Retriever
 from backend.retrieval.fusion.reranker import Reranker
@@ -27,32 +28,35 @@ class RetrievalPipeline:
             ))
             
             # Parallel Dense + Sparse
+            t0 = time.perf_counter()
             dense_task = asyncio.create_task(self.dense.retrieve(query))
             sparse_task = asyncio.create_task(self.sparse.retrieve(query))
-            
             dense_res, sparse_res = await asyncio.gather(dense_task, sparse_task)
+            t_retrieval = (time.perf_counter() - t0) * 1000
             
             telemetry_bus.emit(TelemetryEvent(
                 event_type="dense_retrieval",
                 session_id=session_id,
                 request_id=query.parent_request_id,
-                payload={"intent_id": query.intent_id, "candidates": len(dense_res)}
+                payload={"intent_id": query.intent_id, "candidates": len(dense_res), "latency_ms": t_retrieval}
             ))
             telemetry_bus.emit(TelemetryEvent(
                 event_type="sparse_retrieval",
                 session_id=session_id,
                 request_id=query.parent_request_id,
-                payload={"intent_id": query.intent_id, "candidates": len(sparse_res)}
+                payload={"intent_id": query.intent_id, "candidates": len(sparse_res), "latency_ms": t_retrieval}
             ))
             
             # RRF Fusion
+            t1 = time.perf_counter()
             fused = reciprocal_rank_fusion([dense_res, sparse_res], k=60)
+            t_fusion = (time.perf_counter() - t1) * 1000
             
             telemetry_bus.emit(TelemetryEvent(
                 event_type="evidence_fused",
                 session_id=session_id,
                 request_id=query.parent_request_id,
-                payload={"intent_id": query.intent_id, "fused_count": len(fused)}
+                payload={"intent_id": query.intent_id, "fused_count": len(fused), "latency_ms": t_fusion}
             ))
             
             # Optional Reranking
@@ -94,3 +98,4 @@ class RetrievalPipeline:
                             if intent_id not in existing.intent_ids:
                                 existing.intent_ids.append(intent_id)
         return deduped
+
